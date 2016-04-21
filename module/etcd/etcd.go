@@ -43,6 +43,10 @@ func EtcdGet(key string) (*client.Response, error) {
 	return models.EtcdGet(key)
 }
 
+func EtcdDel(path string) error {
+	return models.EtcdDel(path)
+}
+
 func EtcdWatch(path string) client.Watcher {
 	return models.EtcdWatch(path)
 }
@@ -196,4 +200,10 @@ func GetCurrentStageVersionToRelation(stageVersion *models.StageVersion) (string
 	}
 
 	return to.Node.Value, nil
+}
+
+func DeleteGivenPipelineVersionInfo(pieplineVersion *models.PipelineVersion) {
+	pipelineVersionPath := fmt.Sprintf(DEFAULT_PIPELINEVERSION_ETCD_PATH, pieplineVersion.WorkspaceId, pieplineVersion.ProjectId, pieplineVersion.PipelineId, pieplineVersion.Id)
+
+	EtcdDel(pipelineVersionPath)
 }

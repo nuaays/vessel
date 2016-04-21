@@ -8,22 +8,18 @@ import (
 	"strings"
 	"time"
 
-	"github.com/containerops/vessel/models"
-	"github.com/containerops/vessel/module/etcd"
+	"github.com/coreos/etcd/client"
 	"golang.org/x/net/context"
 
-	kubeclient "github.com/containerops/vessel/module/kubernetes"
-	"github.com/coreos/etcd/client"
+	"github.com/containerops/vessel/models"
+	"github.com/containerops/vessel/module/etcd"
 )
 
 const (
-	StateNotStart  = "not start"
-	StateStarting  = "working"
-	StateSuccess   = "success"
-	StateFailed    = "failed"
-	StartSucessful = "OK"
-	StartFailed    = "ERROR"
-	StartTimeout   = "TIMEOUT"
+	StateNotStart = "not start"
+	StateStarting = "working"
+	StateSuccess  = "success"
+	StateFailed   = "failed"
 )
 
 // BootPipelineVersion : start a pipelineVersion,boot the stage and return the result
@@ -175,6 +171,25 @@ func isFinish(finishChan chan models.StageVersionState, stageVersionStateChan ch
 	}
 }
 
+// clear pipelineVersion,that which state in DB is not finish
+func ClearNotFinishPipelineVersion() {
+	pipelineVersions := models.GetNotFinishPipelineVersionInfo()
+
+	for _, pipelineVersion := range pipelineVersions {
+		stageVersions := models.GetAllStageVersionByPipelineVersionId(pipelineVersion.Id)
+
+		for _, stageVersion := range stageVersions {
+			stopAndDeleteStageVersion(stageVersion)
+			stageVersion.Delete()
+		}
+
+		// delete pipelineVersion info in ETCD
+		etcd.DeleteGivenPipelineVersionInfo(pipelineVersion)
+		// delete pipelineVersion info in DB
+		pipelineVersion.Delete()
+	}
+}
+
 // stage stage by given name,after start give single to finishChan
 func startStage(stageVersion *models.StageVersion, bootChan chan *models.StageVersion, finishChan chan models.StageVersionState) {
 	// try to start current stageVersion if start success ,return true,else return false
@@ -279,6 +294,11 @@ func startStage(stageVersion *models.StageVersion, bootChan chan *models.StageVe
 	finishChan <- stageVersionState
 }
 
+// stop and delete given stageVersion in k8s
+func stopAndDeleteStageVersion(stageVersion *models.StageVersion) {
+	// todo: stop and delete given stageVersion in k8s
+}
+
 func getCurrentStageVersionState(stageVresion *models.StageVersion, stateChan chan string) {
 	state, err := etcd.GetCurrentStageVersionState(stageVresion)
 	if err != nil {
@@ -319,69 +339,24 @@ func changeStageVersionState(stageVersion *models.StageVersion, bootChan chan *m
 			}
 		}
 	}
-
 }
 
 func startStageInK8S(runResultChan chan models.StageVersionState, runResult models.StageVersionState) {
+	sec := rand.New(rand.NewSource(time.Now().UnixNano())).Int63n(5) + 3
 
-	/*	sec := rand.New(rand.NewSource(time.Now().UnixNano())).Int63n(5) + 3
-		timeStr := strconv.FormatInt(sec, 10) + "s"
-		timeDur, _ := time.ParseDuration(timeStr)
-		time.Sleep(timeDur)
-		if rand.New(rand.NewSource(time.Now().UnixNano())).Int63n(100) < 50 {
-			runResult.RunResult = StateSuccess
-			runResult.Detail = "run success"
-		} else {
-			runResult.RunResult = StateFailed
-			runResult.Detail = "not luck"
-		}*/
+	timeStr := strconv.FormatInt(sec, 10) + "s"
+	timeDur, _ := time.ParseDuration(timeStr)
+	time.Sleep(timeDur)
 
-	pipelineVersion := models.GetPipelineVersion(runResult.PipelineVersionId)
-	watchCh := make(chan string)
-	// hostip := kubeclient.GetHostIp()
-
-	//ipProts to store ips and ports of pods in pipeline after it is stated
-	ipPorts := &[]kubeclient.IpPort{}
-	if err := kubeclient.GetPipelinePodsIPort(pipelineVersion, ipPorts); err != nil {
-		log.Printf("Get podsip in pipeline %v, err\n", pipelineVersion.GetMetadata().Name, err)
+	if rand.New(rand.NewSource(time.Now().UnixNano())).Int63n(100) < 50 {
+		runResult.RunResult = StateSuccess
+		runResult.Detail = "run success"
+	} else {
+		runResult.RunResult = StateFailed
+		runResult.Detail = "not luck"
 	}
 
-	// First, to watch the pipeline status and then to start it
-	go kubeclient.WatchPipelineStatus(pipelineVersion, kubeclient.Added, watchCh)
-	if err := kubeclient.StartPipeline(pipelineVersion); err != nil {
-		log.Printf("Start k8s resource pipeline name :%v err : %v\n", pipelineVersion.MetaData.Name, err)
-	}
-
-	startStatus := <-watchCh
-	if startStatus == kubeclient.OK {
-		for _, ipPort := range ipPorts {
-			// Should be go routine here to ensure the causetime is not out of timeout
-			if checkBussinessResult(ipPort.Ip, ipPort.Port) {
-				// Going to write other things there, creationTimeStamp, selfLink
-				runResult.RunResult <- StartSucessful
-			} else {
-				runResult.RunResult <- StartFailed
-			}
-		}
-	} else if startStatus == kubeclient.Error {
-		runResult.RunResult <- StartFailed
-	}
-
-	runResult.RunResult <- StartTimeout
+	// runResult.GetPipelineVersion()
 
 	runResultChan <- runResult
-}
-
-// checkBussinessResult : get bussiness result from pipelineVersion.statusCheckUrl, success:200, ignore:0,others:failed
-func checkBussinessResult(ip string, port int64) bool {
-	// Later, to put read checkStatusUrl here and get return value to res
-	// Read for statusCheckCount times, each time should in statusCheckInterval
-	var res int
-	if res == 200 {
-		return true
-	} else if res == 0 {
-		return true
-	}
-
-	return false
 }
