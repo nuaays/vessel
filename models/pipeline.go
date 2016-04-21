@@ -23,7 +23,6 @@ type Pipeline struct {
 	ProjectId    int64  `json:"projectId"`
 	Name         string `json:"name" gorm:"type:varchar(512)"`
 	Actived      int64  `json:"actived"`
-	SelfLink     string `json:"selfLink" gorm:"type:varchar(512)"`
 	PipelineType int64  `json:"pipelineType"`
 	Description  string `json:"description"`
 }
@@ -55,12 +54,12 @@ type Stage struct {
 
 type PipelineVersionRun struct {
 	gorm.Model
-	Created             int64  `json:"created"`
-	Updated             int64  `json:"updated"`
-	PipelineVersionId   int64  `json:"pipelineVersionId"`
-	Status              string `json:"state"`
-	Log                 string `json:"log" gorm:"type:text"`
-	Description         string `json:"description"`
+	Created           int64  `json:"created"`
+	Updated           int64  `json:"updated"`
+	PipelineVersionId int64  `json:"pipelineVersionId"`
+	Status            string `json:"state"`
+	Log               string `json:"log" gorm:"type:text"`
+	Description       string `json:"description"`
 }
 
 type StageRun struct {
