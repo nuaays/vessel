@@ -4,26 +4,11 @@ import "github.com/jinzhu/gorm"
 
 type Project struct {
 	gorm.Model
-	WorkspaceID uint   `json:"workspaceID"`
 	Name        string `json:"name"`
-	Description string `json:"description"`
+	Code        string `json:"code"`
 	Actived     bool   `json:"actived"`
+	SelfLink    string `json:"selfLink" gorm:"type:varchar(512)"`
+	Created     int64  `json:"created"`
+	Updated     int64  `json:"updated"`
+	Description string `json:"description"`
 }
-
-//
-// func (pj *Project) Create(wid int64, name, description string) (int64, error) {
-// 	return 0, nil
-// }
-//
-// func (pj *Project) Put(id int64, name, description string) error {
-// 	return nil
-// }
-//
-// func (pj *Project) Get(id int64) (*Project, error) {
-// 	return nil, nil
-// }
-//
-// func (pj *Project) Delete(id int64) error {
-// 	return nil
-//
-// }
