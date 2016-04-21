@@ -46,13 +46,16 @@ type Team struct {
 
 type User struct {
 	gorm.Model
-	Created     int64  `json:"created"`
-	Updated     int64  `json:"updated"`
-	Name        string `json:"name"`
-	Code        string `json:"code"`
-	Email       string `json:"email"`
-	Actived     bool   `json:"actived"`
-	Description string `json:"description"`
+	Created        int64  `json:"created"`
+	Updated        int64  `json:"updated"`
+	Name           string `json:"name"`
+	Code           string `json:"code"`
+	Password       string `json:"password"`
+	Token          string `json:"token"`
+	TokenExpiresIn int64  `json:"tokenExpiresIn"`
+	Email          string `json:"email"`
+	Actived        bool   `json:"actived"`
+	Description    string `json:"description"`
 }
 
 type OrganizationTeam struct {
