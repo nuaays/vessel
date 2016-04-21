@@ -13,6 +13,11 @@ const (
 	ProjectTeamPermissions_Admin = 100
 	ProjectTeamPermissions_Write = 200
 	ProjectTeamPermissions_Read  = 300
+
+	PipelineTeamPermissions_Admin = 100
+	PipelineTeamPermissions_Write = 200
+	PipelineTeamPermissions_Read  = 300
+	PipelineTeamPermissions_Run   = 400
 )
 
 type Organization struct {
@@ -62,5 +67,12 @@ type ProjectTeam struct {
 	gorm.Model
 	TeamId      int64
 	ProjectId   int64
+	Permissions int64
+}
+
+type PipelineTeam struct {
+	gorm.Model
+	TeamId      int64
+	PipelineId   int64
 	Permissions int64
 }
