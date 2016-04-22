@@ -10,6 +10,11 @@ const (
 	PIPERUNNING
 	PIPEPENDDING
 	PIPEEXCEPT
+
+	StateNotStart = "not start"
+	StateStarting = "working"
+	StateSuccess  = "success"
+	StateFailed   = "failed"
 )
 
 var (
@@ -22,18 +27,18 @@ type Pipeline struct {
 	Id          int64
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
-	DeletedAt   *time.Time       `sql:"index"`
-	WorkspaceId int64            `json:"workspaceId"`
-	ProjectId   int64            `json:"projectId"`
-	Name        string           `json:"name" gorm:"type:varchar(255)"`
-	SelfLink    string           `json:"selfLink" gorm:"type:varchar(255)"`
-	Labels      string           `json:"labels"`
-	Annotations string           `json:"annotations"`
-	Detail      string           `json:"detail" gorm:"type:text"`
-	Stages      []*Stage         `sql:"-"`
+	DeletedAt   *time.Time `sql:"index"`
+	WorkspaceId int64      `json:"workspaceId"`
+	ProjectId   int64      `json:"projectId"`
+	Name        string     `json:"name" gorm:"type:varchar(255)"`
+	SelfLink    string     `json:"selfLink" gorm:"type:varchar(255)"`
+	Labels      string     `json:"labels"`
+	Annotations string     `json:"annotations"`
+	Detail      string     `json:"detail" gorm:"type:text"`
+	Stages      []*Stage   `sql:"-"`
 	// todo-del MetaData StageSpecs
-	MetaData    PipelineMetaData `sql:"-"`
-	StageSpecs  []StageSpec      `sql:"-"`
+	MetaData   PipelineMetaData `sql:"-"`
+	StageSpecs []StageSpec      `sql:"-"`
 }
 
 type PipelineVersion struct {
@@ -41,21 +46,21 @@ type PipelineVersion struct {
 	Id            int64
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
-	DeletedAt     *time.Time       `sql:"index"`
-	WorkspaceId   int64            `json:"workspaceId"`
-	ProjectId     int64            `json:"projectId"`
-	PipelineId    int64            `json:"pipelineId"`
-	Namespace     string           `json:"namespace"`
-	SelfLink      string           `json:"selfLink" gorm:"type:varchar(255)"`
-	Labels        string           `json:"labels"`
-	Annotations   string           `json:"annotations"`
-	Detail        string           `json:"detail" gorm:"type:text"`
-	StageVersions string           `json:"stageVersions"`
-	Log           string           `json:"log" gorm:"type:text"`
-	Status        string           `json:"state"`
+	DeletedAt     *time.Time `sql:"index"`
+	WorkspaceId   int64      `json:"workspaceId"`
+	ProjectId     int64      `json:"projectId"`
+	PipelineId    int64      `json:"pipelineId"`
+	Namespace     string     `json:"namespace"`
+	SelfLink      string     `json:"selfLink" gorm:"type:varchar(255)"`
+	Labels        string     `json:"labels"`
+	Annotations   string     `json:"annotations"`
+	Detail        string     `json:"detail" gorm:"type:text"`
+	StageVersions string     `json:"stageVersions"`
+	Log           string     `json:"log" gorm:"type:text"`
+	Status        string     `json:"state"`
 	// todo-del MetaData StageSpecs
-	MetaData      PipelineMetaData `sql:"-"`
-	StageSpecs    []StageSpec      `sql:"-"`
+	MetaData   PipelineMetaData `sql:"-"`
+	StageSpecs []StageSpec      `sql:"-"`
 }
 
 // func (pv *PipelineVersion) GetMetadata() PipelineMetaData {
@@ -174,6 +179,27 @@ func (pipe *Pipeline) GetPipelineInfoByPipelineId(id int64) (*Pipeline, error) {
 	err = db.Where("id = ?", id).First(result).Error
 
 	return result, err
+}
+
+// get pipelineVersion which state is not finish
+func GetNotFinishPipelineVersionInfo() []*PipelineVersion {
+	db, err := GetDb()
+	if err != nil {
+		return nil
+	}
+	result := make([]*PipelineVersion, 0)
+	err = db.Where("status = ?", StateStarting).Find(&result).Error
+
+	return result
+}
+
+func (plv *PipelineVersion) Delete() {
+	db, err := GetDb()
+	if err != nil {
+		return
+	}
+
+	db.Model(plv).Where("id = ?", plv.Id).Delete(plv)
 }
 
 func (plv *PipelineVersion) Done() error {

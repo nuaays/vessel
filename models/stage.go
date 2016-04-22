@@ -30,17 +30,17 @@ type Stage struct {
 	Id          int64
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
-	DeletedAt   *time.Time       `sql:"index"`
-	WorkspaceId int64            `json:"workspaceId"`
-	ProjectId   int64            `json:"projectId"`
-	PipelineId  int64            `json:"pipelineId"`
-	Name        string           `json:"name"`
-	Detail      string           `json:"detail"`
-	From        []string         `sql:"-"`
-	To          []string         `sql:"-"`
+	DeletedAt   *time.Time `sql:"index"`
+	WorkspaceId int64      `json:"workspaceId"`
+	ProjectId   int64      `json:"projectId"`
+	PipelineId  int64      `json:"pipelineId"`
+	Name        string     `json:"name"`
+	Detail      string     `json:"detail"`
+	From        []string   `sql:"-"`
+	To          []string   `sql:"-"`
 	// todo-del MetaData StageSpec
-	MetaData    PipelineMetaData `sql:"-"`
-	StageSpec   StageSpec        `sql:"-"`
+	MetaData  PipelineMetaData `sql:"-"`
+	StageSpec StageSpec        `sql:"-"`
 }
 
 type StageVersion struct {
@@ -58,8 +58,8 @@ type StageVersion struct {
 	Detail            string             `json:"detail"`
 	State             *StageVersionState `json:"state" sql:"-"`
 	// todo-del MetaData StageSpec
-	MetaData          PipelineMetaData   `sql:"-"`
-	StageSpec         StageSpec          `sql:"-"`
+	MetaData  PipelineMetaData `sql:"-"`
+	StageSpec StageSpec        `sql:"-"`
 }
 
 type StageRelation struct {
@@ -167,6 +167,22 @@ func GetStageVersion(svid int64) *StageVersion {
 	return result
 }
 
+func GetAllStageVersionByPipelineVersionId(plvid int64) []*StageVersion {
+	db, err := GetDb()
+	if err != nil {
+		return nil
+	}
+	result := make([]*StageVersion, 0)
+
+	err = db.Where("pipeline_version_id = ?", plvid).Find(&result).Error
+	for k, stageV := range result {
+		temp := GetStageVersion(stageV.Id)
+		result[k] = temp
+	}
+
+	return result
+}
+
 func (stage *Stage) Save() error {
 	db, err := GetDb()
 	if err != nil {
@@ -235,6 +251,17 @@ func (stageVersionState StageVersionState) ChangeStageVersionState() error {
 
 	err = db.Model(&StageVersionState{}).Where("pipeline_id = ?", stageVersionState.PipelineId).Where("pipeline_version_id = ?", stageVersionState.PipelineVersionId).Where("stage_name = ?", stageVersionState.StageName).Updates(map[string]interface{}{"run_result": stageVersionState.RunResult, "detail": stageVersionState.Detail}).Error
 	return err
+}
+
+func (stageVersion *StageVersion) Delete() {
+	db, err := GetDb()
+	if err != nil {
+		return
+	}
+
+	db.Model(stageVersion).Where("id = ?", stageVersion.Id).Delete(stageVersion)
+
+	db.Model(&StageVersionState{}).Where("stage_version_id = ?", stageVersion.Id).Delete(&StageVersionState{})
 }
 
 func (stage *Stage) GetStagesByPipelineInfo(pipeline *Pipeline) ([]*Stage, error) {

@@ -18,7 +18,6 @@ import (
 func CheckPod(namespace string, podName string) bool {
 
 	pods, err := CLIENT.Pods(namespace).List(api.ListOptions{})
-	// CLIENT.Pods(namespace).List(opts).Items[0].
 	if err != nil {
 		fmt.Errorf("List pods err: %v\n", err.Error())
 	}
@@ -30,18 +29,6 @@ func CheckPod(namespace string, podName string) bool {
 	}
 	return false
 }
-
-func getPodIp(namespace string, podName string) (string, error) {
-	pod, err := CLIENT.Pods(namespace).Get(podName)
-	if err != nil {
-		fmt.Errorf("Get pod %v err: %v\n", podName, err)
-		return "", err
-	}
-
-	return pod.Status.PodIP, nil
-}
-
-// func getPodsIp(namespace string, pods)
 
 // GetPodPhase get phase of the resource by namespace and podname, return empty string when no pod find
 func GetPodStatus(namespace string, podName string) string {
@@ -55,7 +42,6 @@ func GetPodStatus(namespace string, podName string) string {
 		if pod.Name == podName {
 			return string(pod.Status.Phase)
 		}
-		// pod.Spec.
 	}
 	return ""
 }

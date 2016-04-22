@@ -9,6 +9,7 @@ import (
 	"gopkg.in/macaron.v1"
 
 	"github.com/containerops/vessel/models"
+	"github.com/containerops/vessel/module/pipeline"
 	"github.com/containerops/vessel/setting"
 	"github.com/containerops/vessel/web"
 )
@@ -45,6 +46,9 @@ func runWeb(c *cli.Context) {
 		return
 	}
 	models.SyncDatabase()
+
+	// remove pipelineVersion that  state is not finish
+	pipeline.ClearNotFinishPipelineVersion()
 
 	m := macaron.New()
 

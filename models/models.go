@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"time"
 
-	"golang.org/x/net/context"
-
-	"github.com/containerops/vessel/setting"
 	"github.com/coreos/etcd/client"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
+	"golang.org/x/net/context"
+
+	"github.com/containerops/vessel/setting"
 )
 
 var (
@@ -134,7 +134,6 @@ func InitEtcd() error {
 		}
 	}
 	return nil
-
 }
 
 //
@@ -158,6 +157,16 @@ func EtcdGet(key string) (*client.Response, error) {
 	}
 	kapi := client.NewKeysAPI(EtcdClient)
 	return kapi.Get(context.Background(), key, nil)
+}
+
+func EtcdDel(path string) error {
+	if EtcdClient == nil {
+		InitEtcd()
+	}
+	kapi := client.NewKeysAPI(EtcdClient)
+	_, err := kapi.Delete(context.Background(), path, &client.DeleteOptions{Recursive: true})
+
+	return err
 }
 
 func EtcdWatch(path string) client.Watcher {
