@@ -12,9 +12,14 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 )
 
+const (
+	DEFAULT_PIPELINEVERSION_ETCD_PATH = "/containerops/vessel/ws-%d/pj-%d/pl-%d/plv-%d/stage-%d/"
+)
+
 var (
 	EtcdClient client.Client
-	DbClient   *gorm.DB
+
+	DbClient *gorm.DB
 )
 
 //Init Database

@@ -1,7 +1,6 @@
 package middleware
 
 import (
-
 	"gopkg.in/macaron.v1"
 )
 
